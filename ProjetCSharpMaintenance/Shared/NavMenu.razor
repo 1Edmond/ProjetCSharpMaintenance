@@ -1,0 +1,28 @@
+﻿<MudPaper Class="py-3" Elevation="0" Style="width:250px" hidden="@IsExpanded">
+    <MudNavMenu>
+        <MudNavLink Href="/home" Class="ml-1" Match="Microsoft.AspNetCore.Components.Routing.NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Accueil</MudNavLink>
+        <MudNavGroup Title="Maintenance" Class="ml-1" Icon="@Icons.Material.Filled.SupervisedUserCircle">
+            <MudNavLink Href="/maintenances/all" Icon="@Icons.Material.Filled.List">Liste</MudNavLink>
+            <MudNavLink Href="/maintenances/add" Icon="@Icons.Material.Filled.AppRegistration">Formulaire</MudNavLink>
+        </MudNavGroup>
+        <MudNavGroup Title="Type de maintenance" Class="ml-1" Icon="@Icons.Material.Filled.MenuBook">
+            <MudNavLink Href="/typeMaintenances/all" Icon="@Icons.Material.Filled.List">Liste</MudNavLink>
+            <MudNavLink Href="/typeMaintenances/add" Icon="@Icons.Material.Filled.AppRegistration">Formulaire</MudNavLink>
+        </MudNavGroup>
+        @if(AppConstants.CurrentUser == null || AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
+        {
+            <MudNavGroup Title="Utilisateurs" Class="ml-1" Icon="@Icons.Material.Filled.Person">
+                <MudNavLink Href="/utilisateurs/all" Icon="@Icons.Material.Filled.List">Liste</MudNavLink>
+                <MudNavLink Href="/utilisateurs/add" Icon="@Icons.Material.Filled.AppRegistration">Formulaire</MudNavLink>
+            </MudNavGroup>
+        }
+    </MudNavMenu>
+</MudPaper>
+
+@code {
+    bool hasItemExpanded = false;
+    int expandedItem = -1;
+
+    [Parameter]
+    public bool IsExpanded { get; set; }
+}

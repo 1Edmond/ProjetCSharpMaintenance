@@ -1,0 +1,97 @@
+﻿@page "/utilisateurs/all"
+
+@inject IDBService<Utilisateur> utilisateurService
+@inject IMaintenanceNotification notification
+@inject ISnackbar snackbar
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+
+
+<MudTable Items="@Utilisateurs" Hover="true" SortLabel="Sort By" Filter="new Func<Utilisateur,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Liste des utilisateurs efféctuées</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Rechercher" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortBy="new Func<Utilisateur, object>(x=>x.Nom)">Nom</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Utilisateur, object>(x=>x.Prenom)">Prénom</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Utilisateur, object>(x=>x.Pseudo)">Pseudo</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Utilisateur, object>(x=>x.Role)">Rôle</MudTableSortLabel></MudTh>
+        <MudTh>Action</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nom">@context.Nom</MudTd>
+        <MudTd DataLabel="Prenom">@context.Prenom</MudTd>
+        <MudTd DataLabel="Pseudo">@context.Pseudo</MudTd>
+        <MudTd DataLabel="Role">@context.Role</MudTd>
+        <MudTd DataLabel="Action">
+            <MudIconButton Color="Color.Secondary" @onclick="@(() => showDeleteDialog(context))" Icon="@Icons.Material.Filled.Delete" aria-label="delete"></MudIconButton>
+            <MudIconButton Color="Color.Primary" @onclick="@(() => GotoDetails(context.Id))" Icon="@Icons.Material.Filled.Update" aria-label="update"></MudIconButton>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[]{5, 10}" />
+    </PagerContent>
+</MudTable>
+
+
+@code {
+    private bool enabled = true;
+    private string searchString1 = "";
+    private Utilisateur selectedItem1 = null;
+    private IEnumerable<Utilisateur> Utilisateurs = new List<Utilisateur>();
+    private bool FilterFunc1(Utilisateur element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(Utilisateur element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Nom.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Prenom.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if ($"{element.Nom} {element.Prenom} {element.Pseudo}".Contains(searchString))
+            return true;
+        return false;
+    }
+
+    private void GotoDetails(Guid id)
+    {
+        NavManager.NavigateTo($"utilisateurs/{id.ToString()}");
+    }
+
+    private async Task showDeleteDialog(Utilisateur utilisateur)
+    {
+        try
+        {
+            var options = new MudBlazor.DialogOptions { CloseOnEscapeKey = true, Position = MudBlazor.DialogPosition.Center };
+            var parameters = new DialogParameters { ["Message"] = $"Voulez-vous vraiment suprimer l'utilisateur {utilisateur.Nom} {utilisateur.Prenom}?" };
+            var dialog = DialogService.Show<MaintenanceDialog>("Confirmer la suppresion", options: options,parameters : parameters);
+            var temp = await dialog.GetReturnValueAsync<bool?>();
+            if (temp is not null && temp.Value)
+            {
+                var rep = await utilisateurService.Delete(utilisateur);
+                var users = Utilisateurs.ToList();
+                users.Remove(utilisateur);
+                Utilisateurs = users;
+                await notification.ShowSccessNotification("Suppression réusie", snackbar);
+            }
+        }
+        catch (Exception)
+        {
+
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var temp = await utilisateurService.GetAll();
+        if (temp.Count > 0)
+        {
+            Utilisateurs = temp.ToList();
+        }
+    }
+
+}
+

@@ -1,0 +1,93 @@
+﻿@page "/"
+
+@inject IDBService<Utilisateur> userService
+@layout EmptyLayout
+@inject ISnackbar snackbar
+@inject IMaintenanceNotification notification
+@inject NavigationManager NavigationManager
+
+
+<div class="container-fluid">
+	<div class="row main-content bg-success text-center">
+		<div class="col-md-4 text-center company__info">
+			<span class="company__logo"><h2><span class="fa fa-android"></span></h2></span>
+			<h4 class="company_title">
+				@AppConstants.AppName
+			</h4>
+		</div>
+		<div class="col-md-8 col-xs-12 col-sm-12 login_form ">
+			<div class="container-fluid">
+				<br />
+				<div class="row">
+					<h2>Connectez-vous</h2>
+				</div>
+				<div class="row">
+						<div class="row">
+							<input type="text" @onchange="@((value) => SetLoginValue(0,value.Value.ToString()))" class="form__input" placeholder="Pseudo">
+						</div>
+						<div class="row">
+							<input type="password" @onchange="@((value) => SetLoginValue(1,value.Value.ToString()))" class="form__input" placeholder="Mot de passe">
+						</div>
+						<button @onclick="@(() => LoginMethod() )" type="button" class="btn">
+							Connexion
+						</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+
+
+	List<Utilisateur> utilisateurs = new List<Utilisateur>();
+	void SetLoginValue(int element, string value)
+	{
+		switch (element)
+		{
+			case 0 :
+				userPseudo = value;
+				break;
+			case 1 :
+				userPassword = value;
+				break;
+		}
+
+	}
+
+	string userPseudo = "", userPassword = "";
+	async Task LoginMethod()
+	{
+		if(utilisateurs.Count == 0)
+		{
+			if(userPassword == AppConstants.DEFAUL_PASSWORD && userPseudo == AppConstants.DEFAUL_PSEUDO)
+			{
+				NavigationManager.NavigateTo($"/home");
+			}
+			else
+			{
+				await notification.ShowErrorNotification("Erreur, connexion impossible.", snackbar);
+			}
+		}
+		else
+		{
+			if(utilisateurs.Any(x => x.Pseudo == userPseudo && x.Password == userPassword))
+			{
+				AppConstants.CurrentUser = utilisateurs.First(x => x.Pseudo == userPseudo && x.Password == userPassword);
+				NavigationManager.NavigateTo($"/home");
+			}
+			else
+			{
+				await notification.ShowErrorNotification("Erreur, connexion impossible.", snackbar);
+			}
+		}
+
+	}
+
+	protected override async void OnInitialized()
+	{
+		utilisateurs = await userService.GetAll();
+		base.OnInitialized();
+	}
+
+}

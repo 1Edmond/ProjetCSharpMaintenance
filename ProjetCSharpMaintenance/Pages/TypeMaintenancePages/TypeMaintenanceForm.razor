@@ -1,0 +1,118 @@
+﻿@page "/typeMaintenances/add"
+@page "/typeMaintenances/{UserId}"
+@inject ISnackbar snackbar
+@inject IDBService<TypeMaintenance> typeMaintenanceService
+@inject IMaintenanceNotification notification
+
+<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText Typo="Typo.body2" Align="Align.Center">
+                Vous devez remplir tous les champs pour créer un type de maintenance
+            </MudText>
+        </MudItem>
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Error="libelleErrorState" ErrorText="@libelleErrorStateText" Label="Libelle" HelperText="Le libelle du type de la maintenance"
+                                  @bind-Value="model.Libelle" For="@(() => model.Libelle)" />
+                    <MudTextField Label="Description" Class="mt-3" Error="descriptionErrorState" ErrorText="@descriptionErrorStateText"  HelperText="La description dy type de la maintenance"
+                                  @bind-Value="model.Description" For="@(() => model.Description)" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">@subtmitText</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+    </MudGrid>
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public string UserId { get; set; }
+    TypeMaintenance model = new TypeMaintenance();
+    string descriptionErrorStateText = "", libelleErrorStateText = "", subtmitText = "Ajouter";
+
+
+    bool VerifyFiled()
+    {
+        descriptionErrorState = libelleErrorState = false;
+        if (String.IsNullOrEmpty(model.Libelle))
+        {
+            libelleErrorState = true;
+            libelleErrorStateText = "Le libelle de la maintenance ne doit pas être vide.";
+            return false;
+        }
+        if (String.IsNullOrEmpty(model.Description))
+        {
+            descriptionErrorState = true;
+            descriptionErrorStateText = "Le description de la maintenance ne doit pas être vide.";
+            return false;
+        }
+        return true;
+    }
+
+
+
+    bool descriptionErrorState = false, libelleErrorState = false;
+
+    async Task<bool> Add() => await typeMaintenanceService.Add(model) > 0;
+    async Task<bool> Update() => await typeMaintenanceService.Update(model) > 0;
+
+
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+        if (VerifyFiled())
+        {
+            var rep = false;
+            if (subtmitText == "Ajouter")
+            {
+                model.UtilisateurId = AppConstants.CurrentUser.Id;
+                model.Id = Guid.NewGuid();
+                rep = await Add();
+            }
+            else
+                rep = await Update();
+            if (rep)
+            {
+                if (subtmitText == "Ajouter")
+                    await notification.ShowSccessNotification($"Ajout du type de maintenance {model.Libelle} réussie", snackbar);
+                else
+                    await notification.ShowSccessNotification($"Mise à jour du type de maintenance {model.Libelle}  réussie", snackbar);
+                model = new();
+            }
+            else
+            {
+                await notification.ShowErrorNotification("Erreur l'ajout n'a pas pu être réalisé", snackbar);
+            }
+        }
+        else
+        {
+            await notification.ShowErrorNotification("Erreur données incorrectes", snackbar);
+        }
+        StateHasChanged();
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(UserId, out Guid id))
+        {
+            var response = await typeMaintenanceService.GetById(id);
+            if (response != null)
+            {
+                model.Libelle = response.Libelle;
+                model.Description = response.Description;
+                model.Etat = response.Etat;
+                model.UtilisateurId = response.UtilisateurId;
+                model.Id = response.Id;
+                subtmitText = "Modifier";
+            }
+        }
+    }
+
+
+
+}

@@ -1,0 +1,165 @@
+﻿@page "/typeMaintenances/all"
+@inject IDBService<TypeMaintenance> typeMaintenanceService
+@inject IMaintenanceNotification notification
+@inject ISnackbar snackbar
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+
+<MudTable Items="@TypeMaintenances" Hover="true" SortLabel="Sort By" Filter="new Func<TypeMaintenance,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Liste des type de maintenances efféctuées</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Rechercher" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortBy="new Func<TypeMaintenance, object>(x=>x.Libelle)">Libelle</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<TypeMaintenance, object>(x=>x.Description)">Description</MudTableSortLabel></MudTh>
+        <MudTh>Action</MudTh>
+        @if (AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
+        {
+            <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Maintenance, object>(x=>x.Description)">Etat</MudTableSortLabel></MudTh>
+        }
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Libelle">@context.Libelle</MudTd>
+        <MudTd DataLabel="Description">@context.Description</MudTd>
+        <MudTd DataLabel="Action">
+            @if(context.UtilisateurId == AppConstants.CurrentUser.Id)
+            {
+                @if (context.Etat == 0)
+                {
+                    <MudIconButton Color="Color.Secondary" @onclick="@(() => showDeleteDialog(context))" Icon="@Icons.Material.Filled.Delete" aria-label="delete"></MudIconButton>
+                    <MudIconButton Color="Color.Primary" @onclick="@(() => GotoDetails(context.Id))" Icon="@Icons.Material.Filled.Update" aria-label="update"></MudIconButton>
+                }
+                else
+                {
+                    <MudIconButton Color="Color.Primary" @onclick="@(() => Restore(context))" Icon="@Icons.Material.Filled.Restore" aria-label="update"></MudIconButton>
+                }
+            }
+            else
+            {
+                <p> Aucune Action possible</p>   
+            }
+        </MudTd>
+
+        @if (AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
+        {
+            <MudTh DataLabel="Etat">
+                @if (context.Etat == 0)
+                {
+                    <MudChip Disabled="true" Color="Color.Info" Text="Nouveau">Nouveau</MudChip>
+                }
+                else
+                {
+                    if (context.Etat == 1)
+                    {
+                        <MudChip Disabled="true" Text="Supprimée" Color="Color.Error">Supprimée</MudChip>
+                    }
+                }
+            </MudTh>
+        }
+
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[]{5, 10}" />
+    </PagerContent>
+</MudTable>
+
+
+@code {
+    private bool enabled = true;
+    private string searchString1 = "";
+    private TypeMaintenance selectedItem1 = null;
+    private IEnumerable<TypeMaintenance> TypeMaintenances = new List<TypeMaintenance>();
+    private bool FilterFunc1(TypeMaintenance element) => FilterFunc(element, searchString1);
+
+
+    private bool FilterFunc(TypeMaintenance element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Libelle.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if ($"{element.Libelle} {element.Description}".Contains(searchString))
+            return true;
+        return false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    async Task GetData()
+    {
+        var temp = await typeMaintenanceService.GetAll();
+        if (temp.Count > 0)
+        {
+            if (AppConstants.CurrentUser != null && AppConstants.CurrentUser.Role != UtilisateurRole.Administrateur)
+            {
+                TypeMaintenances = temp.ToList().Where(x => x.Etat == 0).ToList();
+            }
+            else
+            {
+                TypeMaintenances = temp.ToList();
+            }
+        }
+    }
+
+    private void GotoDetails(Guid id)
+    {
+        NavManager.NavigateTo($"typeMaintenances/{id.ToString()}");
+    }
+
+    private async Task Restore(TypeMaintenance maintenance)
+    {
+        try
+        {
+            var options = new MudBlazor.DialogOptions { CloseOnEscapeKey = true, Position = MudBlazor.DialogPosition.Center };
+            var parameters = new DialogParameters { ["Message"] = $"Voulez-vous vraiment restorer le type de maintenance {maintenance.Libelle} ?" };
+            var dialog = DialogService.Show<MaintenanceDialog>("Restoration ", options: options, parameters: parameters);
+            var temp = await dialog.GetReturnValueAsync<bool?>();
+            if (temp is not null && temp.Value)
+            {
+
+                maintenance.Etat = 0;
+                var rep = await typeMaintenanceService.Update(maintenance);
+                await notification.ShowSccessNotification("Restoration réusie", snackbar);
+                await GetData();
+            }
+        }
+        catch (Exception)
+        {
+
+        }
+    }
+
+    private async Task showDeleteDialog(TypeMaintenance maintenance)
+    {
+        try
+        {
+            var options = new MudBlazor.DialogOptions { CloseOnEscapeKey = true, Position = MudBlazor.DialogPosition.Center };
+            var parameters = new DialogParameters { ["Message"] = $"Voulez-vous vraiment suprimer l'utilisateur {maintenance.Libelle} ?" };
+            var dialog = DialogService.Show<MaintenanceDialog>("Confirmer la suppresion", options: options, parameters: parameters);
+            var temp = await dialog.GetReturnValueAsync<bool?>();
+            if (temp is not null && temp.Value)
+            {
+
+                maintenance.Etat = 1;
+                var rep = await typeMaintenanceService.Update(maintenance);
+                var typeMaintenances = TypeMaintenances.ToList();
+                typeMaintenances.Remove(maintenance);
+                TypeMaintenances = typeMaintenances;
+                await notification.ShowSccessNotification("Suppression réusie", snackbar);
+            }
+        }
+        catch (Exception)
+        {
+
+        }
+    }
+
+
+}

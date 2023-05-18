@@ -1,0 +1,139 @@
+﻿@page "/utilisateurs/add"
+@page "/utilisateurs/{UserId}"
+@inject ISnackbar snackbar
+@inject IDBService<Utilisateur> utilisateurService
+@inject IMaintenanceNotification notification
+
+<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+<MudGrid>
+      <MudItem xs="12">
+        <MudText Typo="Typo.body2" Align="Align.Center">
+           Vous devez remplir tous les champs pour créer un utilisateur
+        </MudText>
+    </MudItem>
+    <MudItem xs="12">
+        <MudCard>
+            <MudCardContent>
+                <MudTextField Label="Nom" HelperText="Le nom de l'utilisateur"
+                              @bind-Value="model.Nom" For="@(() => model.Nom)"/>
+                <MudTextField Label="Prénom" Class="mt-3" HelperText="Le prénom de l'utilisateur"
+                                  @bind-Value="model.Prenom" For="@(() => model.Prenom)" />
+                    <MudSelect T="UtilisateurRole" @bind-Value="@model.Role" Label="Rôle" AdornmentIcon="@Icons.Material.Filled.Search">
+                        @foreach (var item in roles)
+                        {
+                            <MudSelectItem T="UtilisateurRole" Value="@item">@item</MudSelectItem>
+                        }
+                    </MudSelect>
+                <MudTextField Label="Pseudo" HelperText="Le pseudo de l'utilisateur'" Class="mt-3"
+                                  @bind-Value="model.Pseudo" For="@(() => model.Pseudo)" />
+                    <MudTextField Error="passwordErrorState" ErrorText="@erroPasswordText" Label="Password" HelperText="Chosissez un mot de passe fort" Class="mt-3"
+                                  @bind-Value="model.Password" For="@(() => model.Pseudo)" InputType="InputType.Password" />
+                    <MudTextField ErrorText="@confirmErroPasswordText" Error="confirmPasswordErrorState" Label="Password" HelperText="Répéter le mot de passe" Class="mt-3" @bind-Value="@confirmPassword"
+                               InputType="InputType.Password"/>
+
+
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">@subtmitText</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+  
+</MudGrid>
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public string UserId { get; set; }
+    Utilisateur model = new Utilisateur();
+    string confirmPassword = "", confirmErroPasswordText = "", erroPasswordText = "", subtmitText = "Ajouter";
+
+
+    private UtilisateurRole UtilisateurRoleSelected { get; set; } = UtilisateurRole.Utilisateur;
+    private IEnumerable<UtilisateurRole> roles { get; set; } = (UtilisateurRole[])Enum.GetValues(typeof(UtilisateurRole));
+
+
+    bool VerifyFiled()
+    {
+        confirmPasswordErrorState = passwordErrorState = false ;
+        if (model.Password.Length < 8)
+        {
+            passwordErrorState = true;
+            erroPasswordText = "La longueur du mot de passe doit être supérieur à 8.";
+            return false;
+        }
+        if(confirmPassword != model.Password)
+        {
+            confirmPasswordErrorState = true;
+            confirmErroPasswordText = "Les mots de passe saisies ne correspondent pas.";
+            return false;
+        }
+        return true;
+    }
+
+
+
+    bool confirmPasswordErrorState = false, passwordErrorState = false;
+
+    async Task<bool> AddUser() => await utilisateurService.Add(model) > 0;
+    async Task<bool> UpdateUser() => await utilisateurService.Update(model) > 0;
+
+
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+
+        if (VerifyFiled())
+        {
+            var rep = false;
+            if (subtmitText == "Ajouter")
+            {
+                model.Id = Guid.NewGuid();
+                rep = await AddUser();
+            }
+            else
+                rep = await UpdateUser();
+            if (rep)
+            {
+                if (subtmitText == "Ajouter")
+                    await notification.ShowSccessNotification($"Ajout de l'utilisateur {model.Nom} {model.Prenom} réussie", snackbar);
+                else
+                    await notification.ShowSccessNotification($"Mise à jour de l'utilisateur {model.Nom} {model.Prenom} réussie", snackbar);
+                model = new();
+                confirmPassword = "";
+            }
+            else
+            {
+                await notification.ShowErrorNotification("Erreur l'ajout n'a pas pu être réalisé", snackbar);   
+            }
+        }
+        else
+        {
+            await notification.ShowErrorNotification("Erreur données incorrectes", snackbar);   
+        }
+        StateHasChanged();
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(UserId, out Guid id))
+        {
+            var response = await utilisateurService.GetById(id);
+            if (response != null)
+            {
+                model.Nom = response.Nom;
+                model.Prenom = response.Prenom;
+                model.Pseudo = response.Pseudo;
+                model.Role = response.Role;
+                model.Etat = response.Etat;
+                model.Id = response.Id;
+                model.Password = "";
+                subtmitText = "Modifier";
+            }
+        }
+    }
+
+
+
+}

@@ -1,0 +1,77 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
+@inject IMaintenanceNotification notification
+@inject ISnackbar snackbar
+
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+
+    <MudLayout>
+        <MudAppBar Elevation="0"  Dense="@dense">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Outlined.DarkMode" Color="Color.Inherit" OnClick="() =>ChangeTheme() " />
+        <MudIconButton Icon="@Icons.Material.Outlined.Logout" Color="Color.Inherit" OnClick="() =>LogOut() " />
+        </MudAppBar>
+        <MudDrawer @bind-Open="@open" Style="overflow: hidden" ClipMode="clipMode" OpenMiniOnHover="true" Elevation="1" Variant="@DrawerVariant.Mini">
+            <MudDrawerHeader>
+                @if (open)
+                {
+                    <div class="row justify-content-center p-md-3">
+                        <img src="/Images/logo.png" class="" height="100" width="250" />
+                        <div class="justify-content-center d-flex">
+                            <marquee behavior="scroll" scrollamount="1" scrolldelay="10">
+                                <strong>
+                                    @AppConstants.AppName
+                                </strong>
+                            </marquee>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row justify-content-center">
+                        <img src="/Images/logo.png" class="justify-content-center d-flex" height="40" width="50" />
+                    </div>
+                }
+            </MudDrawerHeader>
+            <NavMenu />
+        </MudDrawer>
+        <MudMainContent Class="pt-16 px-16">
+            <MudContainer Class="mt-6">
+                <article class="content">
+                    @Body
+                </article>
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+
+@code{
+    bool isExpanded = false;
+    bool open = false;
+    bool dense = false;
+    private MudTheme _theme = new();
+    private bool _isDarkMode;
+    DrawerClipMode clipMode = DrawerClipMode.Never;
+
+    void ToggleDrawer()
+    {
+        open = !open;
+    }
+    private MudThemeProvider _mudThemeProvider;
+
+    void ChangeTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+    }
+
+   async void LogOut()
+    {
+        AppConstants.CurrentUser = null;
+        NavManager.NavigateTo("/");
+        await notification.ShowSccessNotification("Déconnexion réusie", snackbar);
+
+    }
+}
