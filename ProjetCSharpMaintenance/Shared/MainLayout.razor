@@ -16,27 +16,6 @@
         <MudIconButton Icon="@Icons.Material.Outlined.Logout" Color="Color.Inherit" OnClick="() =>LogOut() " />
         </MudAppBar>
         <MudDrawer @bind-Open="@open" Style="overflow: hidden" ClipMode="clipMode" OpenMiniOnHover="true" Elevation="1" Variant="@DrawerVariant.Mini">
-            <MudDrawerHeader>
-                @if (open)
-                {
-                    <div class="row justify-content-center p-md-3">
-                        <img src="/Images/logo.png" class="" height="100" width="250" />
-                        <div class="justify-content-center d-flex">
-                            <marquee behavior="scroll" scrollamount="1" scrolldelay="10">
-                                <strong>
-                                    @AppConstants.AppName
-                                </strong>
-                            </marquee>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="row justify-content-center">
-                        <img src="/Images/logo.png" class="justify-content-center d-flex" height="40" width="50" />
-                    </div>
-                }
-            </MudDrawerHeader>
             <NavMenu />
         </MudDrawer>
         <MudMainContent Class="pt-16 px-16">
