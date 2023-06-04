@@ -1,6 +1,23 @@
 ﻿@page "/home"
+@inject IDBService<Utilisateur> userServices
+@inject NavigationManager NavManager
 
 
 @code {
+    protected override void OnInitialized()
+    {
+        Verify();
+    }
+
+
+    async void Verify()
+    {
+        var count = await userServices.GetAll();
+        if(count.Count() == 0)
+        {
+            NavManager.NavigateTo("/utilisateurs/add");
+        }
+    }
+
 
 }

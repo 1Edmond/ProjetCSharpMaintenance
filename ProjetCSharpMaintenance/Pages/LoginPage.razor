@@ -73,7 +73,8 @@
 		{
 			if(utilisateurs.Any(x => x.Pseudo == userPseudo && x.Password == userPassword))
 			{
-				AppConstants.CurrentUser = utilisateurs.First(x => x.Pseudo == userPseudo && x.Password == userPassword);
+				var user = utilisateurs.FirstOrDefault(x => x.Pseudo == userPseudo && x.Password == userPassword);
+				AppConstants.CurrentUser = user;
 				NavigationManager.NavigateTo($"/home");
 			}
 			else

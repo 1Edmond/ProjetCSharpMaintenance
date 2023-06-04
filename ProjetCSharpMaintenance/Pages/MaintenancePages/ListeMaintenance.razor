@@ -18,7 +18,7 @@
         <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Maintenance, object>(x=>x.Description)">Description</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Maintenance, object>(x=>x.Description)">Type de maintenance</MudTableSortLabel></MudTh>
         <MudTh>Action</MudTh>
-        @if(AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
+        @if(AppConstants.CurrentUser != null && AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
         {   
             <MudTh><MudTableSortLabel Enabled="@enabled" SortBy="new Func<Maintenance, object>(x=>x.Description)">Etat</MudTableSortLabel></MudTh>
         }
@@ -28,7 +28,7 @@
         <MudTd DataLabel="Description">@context.Description</MudTd>
         <MudTd DataLabel="Description">@context.TypeMaintenance.Libelle</MudTd>
         <MudTd DataLabel="Action">
-            @if (context.UtilisateurId == AppConstants.CurrentUser.Id)
+            @if (AppConstants.CurrentUser != null && context.UtilisateurId == AppConstants.CurrentUser.Id)
             {
                 @if (context.Etat == 0)
                 {   
@@ -46,7 +46,7 @@
             }
         </MudTd>
 
-        @if (AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
+        @if (AppConstants.CurrentUser != null && AppConstants.CurrentUser.Role == UtilisateurRole.Administrateur)
         {
             <MudTh DataLabel="Etat">
                 @if (context.Etat == 0)
